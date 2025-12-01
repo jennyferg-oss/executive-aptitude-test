@@ -1,0 +1,256 @@
+// ===============================================
+// 1. DATA: THE TEST QUESTIONS (50 questions required)
+// ===============================================
+// NOTE: Only 5 questions are provided as an example. 
+// You must expand this array to include 50 questions, 
+// ensuring a balanced distribution of weights across all metrics.
+const questions = [
+    {
+        id: 1,
+        title: "The Project Crisis",
+        scenario: "You are an executive leading a critical project facing an unexpected major roadblock. The deadline is tomorrow. The team is demoralized and looking for direction.",
+        options: [
+            {
+                text: "Immediately take control, assign specific tasks to team members without debate, and personally oversee the most complex part to ensure compliance.",
+                weights: {
+                    // Executive Competencies (Max Score 20 per category for 50 Qs)
+                    Logic: 1, Performance: 3, Leadership: 4, Innovation: 1, Executive: 3, 
+                    // Big Five (OCEAN)
+                    Openness: 1, Conscientiousness: 4, Extraversion: 3, Agreeableness: 1, Neuroticism: 1
+                }
+            },
+            {
+                text: "Call an urgent 15-minute huddle. Ask the team for their immediate and best proposed solutions, facilitate a quick decision, and delegate execution immediately.",
+                weights: {
+                    Logic: 3, Performance: 4, Leadership: 5, Innovation: 3, Executive: 5, // BEST OPTION for Executive Leadership
+                    Openness: 3, Conscientiousness: 5, Extraversion: 4, Agreeableness: 3, Neuroticism: 0 
+                }
+            },
+            {
+                text: "Postpone the deadline immediately. Inform stakeholders and spend the next hour analyzing the root cause of the roadblock before planning the next steps.",
+                weights: {
+                    Logic: 4, Performance: 1, Leadership: 2, Innovation: 2, Executive: 1, 
+                    Openness: 2, Conscientiousness: 2, Extraversion: 1, Agreeableness: 4, Neuroticism: 3 
+                }
+            },
+            {
+                text: "Research external solutions and best practices from competitors before making any internal decisions or disturbing the team's concentration.",
+                weights: {
+                    Logic: 5, Performance: 1, Leadership: 1, Innovation: 4, Executive: 2, 
+                    Openness: 5, Conscientiousness: 3, Extraversion: 1, Agreeableness: 2, Neuroticism: 2 
+                }
+            },
+        ]
+    },
+    {
+        id: 2,
+        title: "The Innovative Pitch",
+        scenario: "Your team has an idea that could revolutionize the product but carries a 60% risk of failure. A safer, incremental update is guaranteed to yield 10% growth.",
+        options: [
+            {
+                text: "Present both options to the Board, advocating strongly for the high-risk, high-reward, revolutionary idea, emphasizing the long-term market disruption potential.",
+                weights: {
+                    Logic: 3, Performance: 4, Leadership: 3, Innovation: 5, Executive: 4, // BEST OPTION for Innovation
+                    Openness: 5, Conscientiousness: 3, Extraversion: 4, Agreeableness: 2, Neuroticism: 1
+                }
+            },
+            {
+                text: "Focus only on the safer, guaranteed 10% growth update. Risk is unacceptable given current market volatility.",
+                weights: {
+                    Logic: 2, Performance: 1, Leadership: 1, Innovation: 0, Executive: 1,
+                    Openness: 1, Conscientiousness: 4, Extraversion: 1, Agreeableness: 3, Neuroticism: 4
+                }
+            },
+            {
+                text: "Split resources: dedicate 70% to the safe update and 30% to a proof-of-concept for the revolutionary idea.",
+                weights: {
+                    Logic: 4, Performance: 3, Leadership: 2, Innovation: 3, Executive: 3,
+                    Openness: 3, Conscientiousness: 5, Extraversion: 2, Agreeableness: 4, Neuroticism: 0
+                }
+            },
+            {
+                text: "Require the revolutionary team to conduct a deep analysis, proving a mitigation plan that reduces the failure risk to below 20% before any pitch.",
+                weights: {
+                    Logic: 5, Performance: 2, Leadership: 1, Innovation: 2, Executive: 2,
+                    Openness: 2, Conscientiousness: 4, Extraversion: 1, Agreeableness: 2, Neuroticism: 2
+                }
+            },
+        ]
+    },
+    // ... You must add 48 more questions here following this exact structure ...
+    // Note: The total possible score for each metric must be considered when calculating the 90%
+    // A sample total max score (if max weight for all 50 Qs is 5) would be 50 * 5 = 250 per category.
+];
+
+
+// ===============================================
+// 2. LOGIC AND STATE MANAGEMENT
+// ===============================================
+
+// Total maximum score for all 5 executive competencies combined (assuming max 5 points per question * 50 questions * 5 competencies)
+// Since each question has a max of 5 points for the BEST response, the theoretical total max score is:
+// MAX_SCORE_PER_COMPETENCY = 5 * 50 = 250
+// TOTAL_MAX_SCORE_ALL_COMPETENCIES = 250 * 5 = 1250 (used for the 90% pass calculation)
+const MAX_WEIGHT_PER_QUESTION = 5; 
+const TOTAL_QUESTIONS = 50; // CHANGE THIS to 'questions.length' once 50 are added
+const MAX_SCORE_PER_COMPETENCY = MAX_WEIGHT_PER_QUESTION * TOTAL_QUESTIONS; 
+const TOTAL_MAX_COMPETENCY_SCORE = MAX_SCORE_PER_COMPETENCY * 5; 
+
+// The required score to pass the test (90% of the total max score)
+const PASS_THRESHOLD = TOTAL_MAX_COMPETENCY_SCORE * 0.90; 
+
+let currentQuestionIndex = 0;
+let userResponses = [];
+let selectedOptionIndex = null;
+
+// DOM Elements
+const testContainer = document.getElementById('test-container');
+const resultsContainer = document.getElementById('results-container');
+const questionNumberElement = document.getElementById('question-number');
+const scenarioTitleElement = document.getElementById('scenario-title');
+const scenarioTextElement = document.getElementById('scenario-text');
+const optionsContainer = document.getElementById('options-container');
+const nextButton = document.getElementById('next-button');
+
+// Function to load the current question
+function loadQuestion() {
+    if (currentQuestionIndex >= questions.length) {
+        showResults();
+        return;
+    }
+
+    const q = questions[currentQuestionIndex];
+    selectedOptionIndex = null;
+    optionsContainer.innerHTML = '';
+    nextButton.disabled = true;
+
+    questionNumberElement.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+    scenarioTitleElement.textContent = q.title;
+    scenarioTextElement.textContent = q.scenario;
+
+    q.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.textContent = option.text;
+        button.dataset.index = index;
+        button.onclick = () => selectOption(index, button);
+        optionsContainer.appendChild(button);
+    });
+}
+
+// Function to handle option selection
+function selectOption(index, buttonElement) {
+    // Deselect all buttons
+    Array.from(optionsContainer.children).forEach(btn => btn.classList.remove('selected'));
+    
+    // Select the current button
+    buttonElement.classList.add('selected');
+    selectedOptionIndex = index;
+    nextButton.disabled = false;
+}
+
+// Function to move to the next question
+function nextQuestion() {
+    if (selectedOptionIndex !== null) {
+        // Save the response weights
+        const selectedOption = questions[currentQuestionIndex].options[selectedOptionIndex];
+        userResponses.push(selectedOption.weights);
+
+        currentQuestionIndex++;
+        loadQuestion();
+    }
+}
+
+// Function to calculate and display the results
+function showResults() {
+    testContainer.classList.add('hidden');
+    resultsContainer.classList.remove('hidden');
+
+    const finalScores = {
+        Logic: 0, Performance: 0, Leadership: 0, Innovation: 0, Executive: 0,
+        // OCEAN
+        Openness: 0, Conscientiousness: 0, Extraversion: 0, Agreeableness: 0, Neuroticism: 0
+    };
+
+    // Aggregate all scores from user responses
+    userResponses.forEach(weights => {
+        finalScores.Logic += weights.Logic || 0;
+        finalScores.Performance += weights.Performance || 0;
+        finalScores.Leadership += weights.Leadership || 0;
+        finalScores.Innovation += weights.Innovation || 0;
+        finalScores.Executive += weights.Executive || 0;
+        
+        finalScores.Openness += weights.Openness || 0;
+        finalScores.Conscientiousness += weights.Conscientiousness || 0;
+        finalScores.Extraversion += weights.Extraversion || 0;
+        finalScores.Agreeableness += weights.Agreeableness || 0;
+        finalScores.Neuroticism += weights.Neuroticism || 0;
+    });
+    
+    // Calculate Total Competency Score
+    const totalCompetencyScore = 
+        finalScores.Logic + finalScores.Performance + finalScores.Leadership + 
+        finalScores.Innovation + finalScores.Executive;
+
+    // --- 1. Pass/Fail Status ---
+    const percentage = ((totalCompetencyScore / TOTAL_MAX_COMPETENCY_SCORE) * 100).toFixed(2);
+    const passFailStatusElement = document.getElementById('pass-fail-status');
+    const resultSummaryElement = document.getElementById('result-summary');
+    
+    resultSummaryElement.innerHTML = `Your **Overall Competency Score** is **${totalCompetencyScore}** out of **${TOTAL_MAX_COMPETENCY_SCORE}** (${percentage}%).`;
+
+    if (totalCompetencyScore >= PASS_THRESHOLD) {
+        passFailStatusElement.textContent = "STATUS: PASS! (Meets 90% Executive Standard)";
+        passFailStatusElement.className = 'pass';
+    } else {
+        passFailStatusElement.textContent = "STATUS: FAIL (Does Not Meet 90% Executive Standard)";
+        passFailStatusElement.className = 'fail';
+    }
+    
+    // --- 2. Competency Scores ---
+    const competencyScoresList = document.getElementById('competency-scores');
+    competencyScoresList.innerHTML = '';
+    const competencies = ['Logic', 'Performance', 'Leadership', 'Innovation', 'Executive'];
+    
+    competencies.forEach(comp => {
+        const li = document.createElement('li');
+        const score = finalScores[comp];
+        const compPercentage = ((score / MAX_SCORE_PER_COMPETENCY) * 100).toFixed(1);
+        li.innerHTML = `**${comp}**: <span>${score} / ${MAX_SCORE_PER_COMPETENCY} (${compPercentage}%)</span>`;
+        competencyScoresList.appendChild(li);
+    });
+
+    // --- 3. OCEAN Personality Profile ---
+    // For OCEAN, we calculate a score relative to the maximum possible (5*50 = 250)
+    const oceanScoresList = document.getElementById('ocean-scores');
+    oceanScoresList.innerHTML = '';
+    const oceanTraits = {
+        Openness: 'Openness to Experience (O)',
+        Conscientiousness: 'Conscientiousness (C)',
+        Extraversion: 'Extraversion (E)',
+        Agreeableness: 'Agreeableness (A)',
+        Neuroticism: 'Neuroticism (N) / Emotional Stability'
+    };
+    
+    Object.keys(oceanTraits).forEach(trait => {
+        const li = document.createElement('li');
+        const score = finalScores[trait];
+        // Normalize score to 1-100 scale for easier interpretation
+        const traitPercentage = ((score / MAX_SCORE_PER_COMPETENCY) * 100).toFixed(1);
+        li.innerHTML = `**${oceanTraits[trait]}**: <span>${traitPercentage}%</span>`;
+        oceanScoresList.appendChild(li);
+    });
+
+}
+
+// Event Listeners
+nextButton.addEventListener('click', nextQuestion);
+
+// Initialize the test
+// WARNING: Remember to update TOTAL_QUESTIONS to 50 when you finish adding all questions.
+document.addEventListener('DOMContentLoaded', () => {
+    // Safety check for development
+    if (questions.length < TOTAL_QUESTIONS) {
+        console.warn(`NOTE: Only ${questions.length} questions loaded. Target is ${TOTAL_QUESTIONS}.`);
+    }
+    loadQuestion();
+});
