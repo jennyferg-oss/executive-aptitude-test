@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Aptitude & Leadership Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Executive Aptitude & Leadership Test</h1>
+        <div id="test-container">
+            <div id="question-card">
+                <p id="question-number" class="q-number"></p>
+                <h2 id="scenario-title"></h2>
+                <p id="scenario-text"></p>
+                <div id="options-container" class="options">
+                    </div>
+                <button id="next-button" disabled>Next Question</button>
+            </div>
+        </div>
+
+        <div id="results-container" class="hidden">
+            <h2>Test Results</h2>
+            <div id="result-summary"></div>
+
+            <div class="metrics-section">
+                <h3>Executive Competencies Score</h3>
+                <ul id="competency-scores"></ul>
+            </div>
+            
+            <div class="metrics-section">
+                <h3>Personality Profile (Big Five / OCEAN)</h3>
+                <ul id="ocean-scores"></ul>
+            </div>
+            
+            <p id="pass-fail-status"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
